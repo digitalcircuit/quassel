@@ -605,6 +605,11 @@ qreal ContentsChatItem::setGeometryByWidth(qreal w)
     while (finder.nextWrapColumn(w) > 0)
         lines++;
     qreal spacing = qMax(fontMetrics()->lineSpacing(), fontMetrics()->height()); // cope with negative leading()
+
+    // FIXME EMOJI Fix emoji height; this is just a test for underlining
+    //spacing += fontMetrics()->underlinePos();
+    qDebug() << "Line spacing" << spacing << "for" << data(MessageModel::DisplayRole).toString();
+
     qreal h = lines * spacing;
     delete _data;
     _data = 0;
@@ -657,6 +662,10 @@ void ContentsChatItem::doLayout(QTextLayout *layout) const
 
         line.setPosition(QPointF(0, h));
         h += spacing;
+
+        // FIXME EMOJI
+        qDebug() << "Line height" << line.height() << "for" << data(MessageModel::DisplayRole).toString();
+        //h += line.height();
     }
     layout->endLayout();
 }
