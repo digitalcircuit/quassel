@@ -2,8 +2,38 @@ os:
   - linux
   - osx
 
-sudo: required
+# Ubuntu 14.04 LTS
 dist: trusty
+
+sudo: false
+# Use the container-based architecture for faster builds, better caching, etc!
+# For more guidance, including using custom Apt packages and sources/PPAs,
+# see https://docs.travis-ci.com/user/migrating-from-legacy/
+
+# Need a package or PPA not on the whitelist?  Submit a request:
+# https://github.com/travis-ci/apt-package-whitelist
+# https://github.com/travis-ci/apt-source-whitelist
+addons:
+  apt:
+    packages:
+    # Qt general and Webkit
+    - libqt5webkit5-dev
+    - qttools5-dev
+    - qtscript5-dev
+    # Qt development tools
+    - qt4-dev-tools
+    - qttools5-dev-tools
+    # Qt cryptography
+    - libqca2-dev
+    # dbus
+    - libdbusmenu-qt-dev
+    - libdbusmenu-qt5-dev
+    # Audio
+    - libphonon-dev
+    - libphonon4qt5-dev
+    # Work around a bug in the libphonon CMake module
+    # See https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=805096
+    - libphonon4qt5experimental4
 
 language: cpp
 cache: ccache
@@ -28,12 +58,7 @@ matrix:
 install: |-
   if [ "$TRAVIS_OS_NAME" == "linux" ]
   then
-    sudo apt-get -qy install libqt5webkit5-dev qttools5-dev qtscript5-dev
-    sudo apt-get -qy install libdbusmenu-qt-dev libdbusmenu-qt5-dev
-    sudo apt-get -qy install libphonon-dev libphonon4qt5-dev
-    sudo apt-get -qy install libqca2-dev
-    sudo apt-get -qy install qt4-dev-tools qttools5-dev-tools
-    sudo apt-get -qy install libphonon4qt5experimental4 # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=805096
+    echo "Using packages from Travis apt addon"
   elif [ "$TRAVIS_OS_NAME" == "osx" ]
   then
     brew update
@@ -47,7 +72,9 @@ script: |-
   then
     if [ "$QT_VERSION" = "qt4" ]; then cmake -DUSE_QT4=ON ..; fi
     if [ "$QT_VERSION" = "qt5" ]; then cmake ..; fi
-    make
+    # nproc returns the number of processors.  Let's use all of them!
+    # Travis' container infrastructure has 2 cores available.
+    make -j $(nproc)
   elif [ "$TRAVIS_OS_NAME" == "osx" ]
   then
     if [[ "$TRAVIS_TAG" != "" && "$GH_TOKEN" != "" ]]
