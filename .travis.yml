@@ -70,6 +70,11 @@ script: |-
   cd build
   if [ "$TRAVIS_OS_NAME" == "linux" ]
   then
+    # Debugging!
+    echo "getconf result:"
+    getconf _NPROCESSORS_ONLN
+    echo "nproc result:"
+    nproc
     if [ "$QT_VERSION" = "qt4" ]; then cmake -DUSE_QT4=ON ..; fi
     if [ "$QT_VERSION" = "qt5" ]; then cmake ..; fi
     # nproc returns the number of processors.  Let's use all of them!
