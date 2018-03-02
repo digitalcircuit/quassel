@@ -33,6 +33,7 @@ CoreInfoDlg::CoreInfoDlg(QWidget *parent)
 {
     ui.setupUi(this);
     connect(&_coreInfo, SIGNAL(initDone()), this, SLOT(coreInfoAvailable()));
+    connect(&_coreInfo, SIGNAL(updatedRemotely()), this, SLOT(coreInfoAvailable()));
     Client::signalProxy()->synchronize(&_coreInfo);
 }
 
@@ -42,6 +43,15 @@ void CoreInfoDlg::coreInfoAvailable()
     ui.labelCoreVersion->setText(_coreInfo["quasselVersion"].toString());
     ui.labelCoreVersionDate->setText(_coreInfo["quasselBuildDate"].toString()); // "BuildDate" for compatibility
     ui.labelClientCount->setNum(_coreInfo["sessionConnectedClients"].toInt());
+
+    // Clear existing widgets from the core session list
+    // See https://stackoverflow.com/questions/3940409/how-to-clear-all-the-widgets-in-parent-widgets
+    // And https://forum.qt.io/topic/30099/solved-remove-widgets-from-layout
+    QLayoutItem *child;
+    while ((child = ui.coreSessionContainer->takeAt(0)) != NULL) {
+        // Remove the widget item
+        child->widget()->deleteLater();
+    }
 
     auto coreSessionSupported = false;
     for (const auto &peerData : _coreInfo["sessionConnectedClientData"].toList()) {
