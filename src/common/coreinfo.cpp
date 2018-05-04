@@ -18,34 +18,26 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.         *
  ***************************************************************************/
 
-#pragma once
+#include "coreinfo.h"
 
-#include "syncableobject.h"
+INIT_SYNCABLE_OBJECT(CoreInfo)
+CoreInfo::CoreInfo(QObject *parent) : SyncableObject(parent) {}
 
-/*
- * gather various information about the core.
- */
-
-class CoreInfo : public SyncableObject
+QVariantMap CoreInfo::coreData() const
 {
-    Q_OBJECT
-    SYNCABLE_OBJECT
+    return _coreData;
+}
 
-    Q_PROPERTY(QVariantMap coreData READ coreData WRITE setCoreData)
+void CoreInfo::setCoreData(const QVariantMap &coreData)
+{
+    _coreData = coreData;
+    SYNC(ARG(coreData));
+    emit coreDataChanged(coreData);
+}
 
-public:
-    explicit CoreInfo(QObject *parent = nullptr);
-    inline QVariant &at(const QString &key) { return _coreData[key]; }
-
-    void setConnectedClientData(int, QVariantList);
-
-signals:
-    void coreDataChanged(QVariantMap);
-
-public slots:
-    QVariantMap coreData() const;
-    void setCoreData(const QVariantMap &);
-
-private:
-    QVariantMap _coreData;
-};
+void CoreInfo::setConnectedClientData(const int peerCount, const QVariantList peerData)
+{
+    _coreData["sessionConnectedClients"] = peerCount;
+    _coreData["sessionConnectedClientData"] = peerData;
+    setCoreData(_coreData);
+}
