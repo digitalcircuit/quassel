@@ -846,7 +846,7 @@ void CoreSessionEventProcessor::processIrcEvent301(IrcEvent *e)
     if (ircuser) {
         ircuser->setAway(true);
         ircuser->setAwayMessage(e->params().at(1));
-        //ircuser->setLastAwayMessage(now);
+        //ircuser->setLastAwayMessageTime(now);
     }
 }
 
