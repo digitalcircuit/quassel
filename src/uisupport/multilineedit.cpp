@@ -463,13 +463,13 @@ void MultiLineEdit::keyPressEvent(QKeyEvent* event)
 
 QString MultiLineEdit::convertRichtextToMircCodes()
 {
-    bool underline, bold, italic, color;
+    bool underline, bold, italic, color, strikethrough;
     QString mircText, mircFgColor, mircBgColor;
     QTextCursor cursor = textCursor();
     QTextCursor peekcursor = textCursor();
     cursor.movePosition(QTextCursor::Start);
 
-    underline = bold = italic = color = false;
+    underline = bold = italic = color = strikethrough = false;
 
     while (cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor)) {
         if (cursor.selectedText() == QString(QChar(QChar::LineSeparator))
@@ -490,6 +490,10 @@ QString MultiLineEdit::convertRichtextToMircCodes()
                 bold = false;
                 mircText.append('\x02');
             }
+            if (strikethrough) {
+                strikethrough = false;
+                mircText.append('\x1E');
+            }
             mircText.append('\n');
         }
         else {
@@ -504,6 +508,10 @@ QString MultiLineEdit::convertRichtextToMircCodes()
             if (!underline && cursor.charFormat().fontUnderline()) {
                 underline = true;
                 mircText.append('\x1f');
+            }
+            if (!strikethrough && cursor.charFormat().fontStrikeOut()) {
+                strikethrough = true;
+                mircText.append('\x1E');
             }
             if (!color && (cursor.charFormat().foreground().isOpaque() || cursor.charFormat().background().isOpaque())) {
                 color = true;
@@ -542,6 +550,10 @@ QString MultiLineEdit::convertRichtextToMircCodes()
                     bold = false;
                     mircText.append('\x02');
                 }
+                if (strikethrough) {
+                    strikethrough = false;
+                    mircText.append('\x1E');
+                }
             }
         }
 
@@ -560,6 +572,9 @@ QString MultiLineEdit::convertRichtextToMircCodes()
     if (bold)
         mircText.append('\x02');
 
+    if (strikethrough)
+        mircText.append('\x1E');
+
     return mircText;
 }
 
@@ -571,6 +586,8 @@ bool MultiLineEdit::mircCodesChanged(QTextCursor& cursor, QTextCursor& peekcurso
     if (cursor.charFormat().fontItalic() != peekcursor.charFormat().fontItalic())
         changed = true;
     if (cursor.charFormat().fontUnderline() != peekcursor.charFormat().fontUnderline())
+        changed = true;
+    if (cursor.charFormat().fontStrikeOut() != peekcursor.charFormat().fontStrikeOut())
         changed = true;
     if (cursor.charFormat().foreground().color() != peekcursor.charFormat().foreground().color())
         changed = true;
@@ -622,6 +639,10 @@ QString MultiLineEdit::convertMircCodesToHtml(const QString& text)
         if (words[i].contains('\x1f')) {
             style.append(" text-decoration: underline;");
             words[i].replace('\x1f', "");
+        }
+        if (words[i].contains('\x1E')) {
+            style.append(" text-decoration: line-through;");
+            words[i].replace('\x1E', "");
         }
         if (words[i].contains('\x03')) {
             int pos = words[i].indexOf('\x03');
