@@ -69,6 +69,8 @@ InputWidget::InputWidget(QWidget* parent)
     ui.italicButton->setIcon(icon::get("format-text-italic"));
     ui.underlineButton->setIcon(icon::get("format-text-underline"));
     ui.strikethroughButton->setIcon(icon::get("format-text-strikethrough"));
+    // The mIRC format style is monospace, not code, but the intent is close enough
+    ui.monospaceButton->setIcon(icon::get("format-text-code"));
     ui.clearButton->setIcon(icon::get("edit-clear"));
     ui.encryptionIconLabel->hide();
 
@@ -116,8 +118,12 @@ InputWidget::InputWidget(QWidget* parent)
     UiStyleSettings fs("Fonts");
     fs.notify("UseCustomInputWidgetFont", this, &InputWidget::setUseCustomFont);
     fs.notify("InputWidget", this, &InputWidget::setCustomFont);
-    if (fs.value("UseCustomInputWidgetFont", false).toBool())
+    if (fs.value("UseCustomInputWidgetFont", false).toBool()) {
         setCustomFont(fs.value("InputWidget", QFont()));
+    } else {
+        // Still need to check that style hints won't overlap
+        checkDefaultFontFamily(ui.inputEdit->font());
+    }
 
     UiSettings s("InputWidget");
     s.initAndNotify("EnableEmacsMode", this, &InputWidget::setEnableEmacsMode, false);
@@ -161,6 +167,7 @@ void InputWidget::setCustomFont(const QVariant& v)
     font.setItalic(false);
     font.setUnderline(false);
     font.setStrikeOut(false);
+    checkDefaultFontFamily(font);
     ui.inputEdit->setCustomFont(font);
 }
 
@@ -380,6 +387,11 @@ void InputWidget::toggleFormatStrikethrough()
     setFormatStrikethrough(!ui.strikethroughButton->isChecked());
 }
 
+void InputWidget::toggleFormatMonospace()
+{
+    setFormatMonospace(!ui.monospaceButton->isChecked());
+}
+
 void InputWidget::clearFormat()
 {
     // Clear all formatting for selection (not global)
@@ -519,6 +531,7 @@ void InputWidget::setFormatClear(const bool global)
     fmt.setFontUnderline(false);
     fmt.setFontStrikeOut(false);
     fmt.setFontItalic(false);
+    // Resetting the font family happens as part of creating a new QTextCharFormat
     fmt.clearForeground();
     fmt.clearBackground();
     if (global) {
@@ -533,6 +546,7 @@ void InputWidget::setFormatClear(const bool global)
     ui.italicButton->setChecked(false);
     ui.underlineButton->setChecked(false);
     ui.strikethroughButton->setChecked(false);
+    ui.monospaceButton->setChecked(false);
 }
 
 void InputWidget::setFormatBold(const bool bold)
@@ -573,6 +587,45 @@ void InputWidget::setFormatStrikethrough(const bool strike)
     mergeFormatOnSelection(fmt);
     // Make sure UI state follows
     ui.strikethroughButton->setChecked(strike);
+}
+
+void InputWidget::setFormatMonospace(const bool monospace)
+{
+    if (_inputFontIsMonospaceFamily) {
+        // Font family is always Monospace, monospace style cannot be toggled
+        return;
+    }
+    // Apply formatting
+    QTextCharFormat fmt;
+    if (monospace) {
+        // Unfortunately, the easy route of "setFixedPitch(true)" doesn't seem to be enough on at
+        // least Kubuntu 20.04
+
+        fmt.setFontFamily("monospace");
+        // "monospace" is not the most pretty option, but it's fairly universal.  If somehow a
+        // monospace font isn't found, we may need to search more exhaustively.  Windows may use
+        // "TypeWriter".
+        // See https://stackoverflow.com/questions/18896933/qt-qfont-selection-of-a-monospace-font-doesnt-work
+        // And https://github.com/KubaO/stackoverflown/tree/master/questions/label-font-18896933
+        //
+        // For example...
+        //
+        // fmt.setFontStyleHint(QFont::StyleHint::Monospace);
+        // if (!QFontInfo(fmt.font()).fixedPitch()) {
+        //     fmt.setFontStyleHint(QFont::StyleHint::TypeWriter);
+        // }
+        //
+        // ...if using this, don't forget to update the .fontFamily() == "monospace" checks to check
+        // for font style, too!
+        mergeFormatOnSelection(fmt);
+    } else {
+        fmt = getFormatOfWordOrSelection();
+        // Restore the input widget font
+        fmt.setFont(ui.inputEdit->font());
+        setFormatOnSelection(fmt);
+    }
+    // Make sure UI state follows
+    ui.monospaceButton->setChecked(monospace);
 }
 
 void InputWidget::mergeFormatOnSelection(const QTextCharFormat& format)
@@ -633,12 +686,21 @@ void InputWidget::on_italicButton_clicked(bool checked)
     setFormatItalic(checked);
 }
 
+void InputWidget::on_monospaceButton_clicked(bool checked)
+{
+    setFormatMonospace(checked);
+}
+
 void InputWidget::fontChanged(const QFont& f)
 {
     ui.boldButton->setChecked(f.bold());
     ui.italicButton->setChecked(f.italic());
     ui.underlineButton->setChecked(f.underline());
     ui.strikethroughButton->setChecked(f.strikeOut());
+    if (!_inputFontIsMonospaceFamily) {
+        // Font family is always Monospace, this cannot be used
+        ui.monospaceButton->setChecked(f.family() == "monospace");
+    }
 }
 
 void InputWidget::colorChosen(QAction* action)
@@ -696,6 +758,24 @@ QIcon InputWidget::createColorToolButtonIcon(const QIcon& icon, const QColor& co
     painter.drawPixmap(target, image, source);
 
     return QIcon(pixmap);
+}
+
+void InputWidget::checkDefaultFontFamily(const QFont& font)
+{
+    _inputFontIsMonospaceFamily = (font.family() == "monospace");
+    ui.monospaceButton->setEnabled(!_inputFontIsMonospaceFamily);
+    ui.inputEdit->setMonospaceFormatEnabled(!_inputFontIsMonospaceFamily);
+    if (_inputFontIsMonospaceFamily) {
+        // It won't be possible to distinguish between default text and monospace-formatted text, so
+        // disable specifying a monospace version.
+        //
+        // Note: not all monospace fonts set this, e.g. "Ubuntu Mono", so it's possible to have a
+        // monospace font and monospace formatting.
+        ui.monospaceButton->setToolTip(
+                    tr("Monospace (not compatible with using a monospace Input Widget font)"));
+    } else {
+        ui.monospaceButton->setToolTip(tr("Monospace"));
+    }
 }
 
 // MOUSE WHEEL FILTER

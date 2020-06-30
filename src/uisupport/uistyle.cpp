@@ -91,6 +91,7 @@ UiStyle::UiStyle(QObject* parent)
     _formatCodes["%I"] = FormatType::Italic;
     _formatCodes["%U"] = FormatType::Underline;
     _formatCodes["%S"] = FormatType::Strikethrough;
+    _formatCodes["%M"] = FormatType::Monospace;
 
     _formatCodes["%DN"] = FormatType::Nick;
     _formatCodes["%DH"] = FormatType::Hostmask;
@@ -736,7 +737,7 @@ QString UiStyle::mircToInternal(const QString& mirc_)
                 mirc += "        ";
                 break;
             case '\x11':
-                // Monospace not supported yet
+                mirc += "%M";
                 break;
             case '\x12':
             case '\x16':

@@ -321,6 +321,8 @@ std::pair<UiStyle::FormatType, UiStyle::MessageLabel> QssParser::parseFormatType
                     fmtType |= FormatType::Underline;
                 else if (condValue == "strikethrough")
                     fmtType |= FormatType::Strikethrough;
+                else if (condValue == "monospace")
+                    fmtType |= FormatType::Monospace;
                 else {
                     qWarning() << Q_FUNC_INFO << tr("Invalid format name: %1").arg(condValue);
                     return invalid;
@@ -707,7 +709,7 @@ QGradientStops QssParser::parseGradientStops(const QString& str_)
 void QssParser::parseFont(const QString& value, QTextCharFormat* format)
 {
     static const QRegExp rx(
-        "((?:(?:normal|italic|oblique|underline|strikethrough|bold|100|200|300|400|500|600|700|800|900) ){0,2}) ?(\\d+)(pt|px)? \"(.*)\"");
+        "((?:(?:normal|italic|oblique|underline|strikethrough|monospace|bold|100|200|300|400|500|600|700|800|900) ){0,2}) ?(\\d+)(pt|px)? \"(.*)\"");
     if (!rx.exactMatch(value)) {
         qWarning() << Q_FUNC_INFO << tr("Invalid font specification: %1").arg(value);
         return;
@@ -726,6 +728,8 @@ void QssParser::parseFont(const QString& value, QTextCharFormat* format)
             format->setFontUnderline(true);
         else if (prop == "strikethrough")
             format->setFontStrikeOut(true);
+        else if (prop == "monospace")
+            format->setFontFamily("monospace");
         else if (prop == "oblique")
             // Oblique is not a property supported by QTextCharFormat
             format->setFontItalic(true);
@@ -755,6 +759,8 @@ void QssParser::parseFontStyle(const QString& value, QTextCharFormat* format)
         format->setFontUnderline(true);
     else if (value == "strikethrough")
         format->setFontStrikeOut(true);
+    else if (value == "monospace")
+        format->setFontFamily("monospace");
     else if (value == "oblique")
         // Oblique is not a property supported by QTextCharFormat
         format->setFontItalic(true);

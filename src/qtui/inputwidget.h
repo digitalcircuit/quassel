@@ -86,9 +86,16 @@ public slots:
     /**
      * Toggle the striking of the selected or typed text
      *
-     * striking becomes normal, and normal becomes underlined.
+     * Striking becomes normal, and normal becomes struckthrough.
      */
     void toggleFormatStrikethrough();
+
+    /**
+     * Toggle the use of monospace font of the selected or typed text
+     *
+     * Monospace font becomes normal, and normal font becomes monospaced.
+     */
+    void toggleFormatMonospace();
 
     /**
      * Clear the formatting of the selected or typed text
@@ -140,6 +147,7 @@ private slots:
     void on_italicButton_clicked(bool checked);
     void on_underlineButton_clicked(bool checked);
     void on_strikethroughButton_clicked(bool checked);
+    void on_monospaceButton_clicked(bool checked);
     void colorChosen(QAction* action);
     void colorHighlightChosen(QAction* action);
 
@@ -181,6 +189,13 @@ private:
      */
     void setFormatStrikethrough(const bool strike);
 
+    /**
+     * Sets the monospace format of the selected or typed text
+     *
+     * @param monospace If true, set text as monospace font, otherwise set text normal
+     */
+    void setFormatMonospace(const bool monospace);
+
     Ui::InputWidget ui;
 
     NetworkId _networkId;
@@ -193,6 +208,13 @@ private:
     QTextCharFormat getFormatOfWordOrSelection();
     void setFormatOnSelection(const QTextCharFormat& format);
 
+    /**
+     * Checks the default font family to ensure there won't be conflicts with custom formatting
+     *
+     * @param font Font for which the font family is checked
+     */
+    void checkDefaultFontFamily(const QFont& font);
+
     bool _perChatHistory;
     struct HistoryState
     {
@@ -203,6 +225,9 @@ private:
     };
 
     QMap<BufferId, HistoryState> historyMap;
+
+    /// If true, the input font is of the monospace family, conflicting with manual monospace format
+    bool _inputFontIsMonospaceFamily;
 };
 
 class MouseWheelFilter : public QObject

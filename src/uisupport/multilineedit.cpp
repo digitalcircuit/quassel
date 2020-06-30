@@ -463,13 +463,13 @@ void MultiLineEdit::keyPressEvent(QKeyEvent* event)
 
 QString MultiLineEdit::convertRichtextToMircCodes()
 {
-    bool underline, bold, italic, color, strikethrough;
+    bool underline, bold, italic, color, strikethrough, monospace;
     QString mircText, mircFgColor, mircBgColor;
     QTextCursor cursor = textCursor();
     QTextCursor peekcursor = textCursor();
     cursor.movePosition(QTextCursor::Start);
 
-    underline = bold = italic = color = strikethrough = false;
+    underline = bold = italic = color = strikethrough = monospace = false;
 
     while (cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor)) {
         if (cursor.selectedText() == QString(QChar(QChar::LineSeparator))
@@ -494,6 +494,10 @@ QString MultiLineEdit::convertRichtextToMircCodes()
                 strikethrough = false;
                 mircText.append('\x1E');
             }
+            if (monospace) {
+                monospace = false;
+                mircText.append('\x11');
+            }
             mircText.append('\n');
         }
         else {
@@ -512,6 +516,12 @@ QString MultiLineEdit::convertRichtextToMircCodes()
             if (!strikethrough && cursor.charFormat().fontStrikeOut()) {
                 strikethrough = true;
                 mircText.append('\x1E');
+            }
+            // Only apply monospace formatting if it's not disabled
+            if (!monospace && !_disableMonospaceFormatting &&
+                    cursor.charFormat().fontFamily() == "monospace") {
+                monospace = true;
+                mircText.append('\x11');
             }
             if (!color && (cursor.charFormat().foreground().isOpaque() || cursor.charFormat().background().isOpaque())) {
                 color = true;
@@ -554,6 +564,10 @@ QString MultiLineEdit::convertRichtextToMircCodes()
                     strikethrough = false;
                     mircText.append('\x1E');
                 }
+                if (monospace) {
+                    monospace = false;
+                    mircText.append('\x11');
+                }
             }
         }
 
@@ -575,6 +589,9 @@ QString MultiLineEdit::convertRichtextToMircCodes()
     if (strikethrough)
         mircText.append('\x1E');
 
+    if (monospace)
+        mircText.append('\x11');
+
     return mircText;
 }
 
@@ -589,6 +606,10 @@ bool MultiLineEdit::mircCodesChanged(QTextCursor& cursor, QTextCursor& peekcurso
         changed = true;
     if (cursor.charFormat().fontStrikeOut() != peekcursor.charFormat().fontStrikeOut())
         changed = true;
+    // Monospace (Monospace/TypeWriter style hint)
+    if (cursor.charFormat().fontStyleHint() != peekcursor.charFormat().fontStyleHint()
+            || cursor.charFormat().fontFamily() != peekcursor.charFormat().fontFamily())
+        changed = true;
     if (cursor.charFormat().foreground().color() != peekcursor.charFormat().foreground().color())
         changed = true;
     if (cursor.charFormat().background().color() != peekcursor.charFormat().background().color())
@@ -599,7 +620,8 @@ bool MultiLineEdit::mircCodesChanged(QTextCursor& cursor, QTextCursor& peekcurso
 QString MultiLineEdit::convertMircCodesToHtml(const QString& text)
 {
     QStringList words;
-    QRegExp mircCode = QRegExp("(|||)", Qt::CaseSensitive);
+    //QRegExp mircCode = QRegExp("(|||)", Qt::CaseSensitive);
+    QRegExp mircCode = QRegExp("(\x02|\x1d|\x1f|\x03|\x1E|\x11)", Qt::CaseSensitive);
 
     int posLeft = 0;
     int posRight = 0;
@@ -643,6 +665,10 @@ QString MultiLineEdit::convertMircCodesToHtml(const QString& text)
         if (words[i].contains('\x1E')) {
             style.append(" text-decoration: line-through;");
             words[i].replace('\x1E', "");
+        }
+        if (words[i].contains('\x11')) {
+            style.append(" font-family: monospace;");
+            words[i].replace('\x11', "");
         }
         if (words[i].contains('\x03')) {
             int pos = words[i].indexOf('\x03');
@@ -790,4 +816,9 @@ void MultiLineEdit::addCompletionSpace()
     // Inserting the space emits textChanged, which should not disable removal
     _completionSpace = 2;
     insertPlainText(" ");
+}
+
+void MultiLineEdit::setMonospaceFormatEnabled(bool enable)
+{
+    _disableMonospaceFormatting = !enable;
 }

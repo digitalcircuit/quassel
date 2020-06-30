@@ -197,6 +197,13 @@ private slots:
     void onFormatStrikethroughTriggered();
 
     /**
+    * Toggle the monospace font of the input widget selected or typed text
+    *
+    * @seealso InputWidget::toggleFormatMonospace()
+    */
+   void onFormatMonospaceTriggered();
+
+    /**
      * Clear the formatting of the input widget selected or typed text
      *
      * @seealso InputWidget::clearFormat()

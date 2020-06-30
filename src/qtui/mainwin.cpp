@@ -473,7 +473,14 @@ void MainWin::setupActions()
                      coll,
                      this,
                      &MainWin::onFormatStrikethroughTriggered,
-                     QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_S))}});
+                     QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_S))},
+         {"FormatMonospace",
+          new Action(icon::get("format-text-code"),
+                     tr("Toggle monospace"),
+                     coll,
+                     this,
+                     &MainWin::onFormatMonospaceTriggered,
+                     QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_M))}});
 
     // Navigation
     coll = QtUi::actionCollection("Navigation", tr("Navigation"));
@@ -1849,6 +1856,13 @@ void MainWin::onFormatStrikethroughTriggered()
     _inputWidget->toggleFormatStrikethrough();
 }
 
+void MainWin::onFormatMonospaceTriggered()
+{
+    if (!_inputWidget)
+        return;
+
+    _inputWidget->toggleFormatMonospace();
+}
 
 void MainWin::onJumpHotBufferTriggered()
 {

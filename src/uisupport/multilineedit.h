@@ -80,6 +80,15 @@ public:
 
     void addCompletionSpace();
 
+    /**
+     * Sets whether or not to enable monospace mIRC formatting in outgoing messages
+     *
+     * @see InputWidget::checkDefaultFontStyleHints()
+     *
+     * @param enable If true, monospace mIRC formatting is enabled, otherwise false
+     */
+    void setMonospaceFormatEnabled(bool enable);
+
 public slots:
     void setMode(Mode mode);
     void setMinHeight(int numLines);
@@ -143,6 +152,9 @@ private:
     qreal _lastDocumentHeight{-1};
 
     QMap<QString, QString> _mircColorMap;
+
+    /// If true, disable sending monospace mIRC format codes
+    bool _disableMonospaceFormatting;
 
 #if defined HAVE_SONNET && !defined HAVE_KDE
     // This member function is provided by KTextEdit
