@@ -3,7 +3,11 @@
 # and attaching Windows and macOS builds, as well as the source archive.
 name: Quassel CI
 
-on: [ push, pull_request ]
+# ---------------------------------------
+# Temporarily allow manually running the workflow while testing macOS CI
+on: [ push, pull_request, workflow_dispatch ]
+#on: [ push, pull_request ]
+# ---------------------------------------
 
 defaults:
   run:
@@ -13,6 +17,9 @@ jobs:
 
 # ------------------------------------------------------------------------------------------------------------------------------------------
   build-linux:
+    # ---------------------------------------
+    if: ${{ false }} # Temporarily disable Linux builds while testing macOS CI
+    # ---------------------------------------
     name: Linux
     runs-on: ubuntu-latest
     container: quassel/quassel-build-env:${{ matrix.dist }}
@@ -164,6 +171,9 @@ jobs:
 
 # ------------------------------------------------------------------------------------------------------------------------------------------
   build-windows:
+    # ---------------------------------------
+    if: ${{ false }} # Temporarily disable Windows builds while testing macOS CI
+    # ---------------------------------------
     name: Windows
     runs-on: windows-latest
     env:
@@ -214,7 +224,10 @@ jobs:
   post-build:
     name: Post-Build
     runs-on: ubuntu-latest
-    needs: [ build-linux, build-macos, build-windows ]
+    # ---------------------------------------
+    needs: [ build-macos ] # Temporarily only require macOS builds while testing macOS CI
+    #needs: [ build-linux, build-macos, build-windows ]
+    # ---------------------------------------
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -235,9 +248,15 @@ jobs:
       run: ls -lhR artifacts
 
     - name: Check artifacts
+      # ---------------------------------------
+      # Temporarily only require 3 CI artifacts (macOS builds) while testing macOS CI
       run: |
         # Sanity check: We should have exactly 5 files matching the given patterns
-        [[ 5 -eq $(find artifacts/ \( -type f -name 'Quassel*.dmg' -o -name 'quassel*.exe' -o -name 'quassel*.7z' \) -printf '.' | wc -c) ]]
+        [[ 3 -eq $(find artifacts/ \( -type f -name 'Quassel*.dmg' -o -name 'quassel*.exe' -o -name 'quassel*.7z' \) -printf '.' | wc -c) ]]
+      #run: |
+      #  # Sanity check: We should have exactly 5 files matching the given patterns
+      #  [[ 5 -eq $(find artifacts/ \( -type f -name 'Quassel*.dmg' -o -name 'quassel*.exe' -o -name 'quassel*.7z' \) -printf '.' | wc -c) ]]
+      # ---------------------------------------
 
     - name: Create release notes
       if: startsWith(github.ref, 'refs/tags/')
