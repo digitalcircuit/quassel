@@ -25,6 +25,23 @@
 #include "testglobal.h"
 #include "util.h"
 
+TEST(UtilTest, tryFormatUnixEpochValid)
+{
+    const QString validUnixEpochStr{"2147483647"};
+    // The Y2038 32-bit Unix epoch rollover
+
+    EXPECT_EQ(tryFormatUnixEpoch(validUnixEpochStr, Qt::DateFormat::ISODate, true), "2038-01-19 03:14:07Z");
+    // Generate with: date --date="@2147483647" --utc "+%Y-%m-%d %H:%M:%SZ"
+    // (Similar to --rfc-3339=seconds, but replacing timezone information of "+00:00" with "Z")
+
+    EXPECT_EQ(tryFormatUnixEpoch(validUnixEpochStr, Qt::DateFormat::RFC2822Date, true), "19 Jan 2038 03:14:07 +0000");
+    // Generate with: date --date="@2147483647" --utc "+%d %b %Y %H:%M:%S %z"
+
+    // TODO: Test non-UTC options, too?  System time zone must overridden.
+}
+
+// TODO: Test invalid dates, strings, stuff
+
 TEST(UtilTest, formatDateTimeToOffsetISO)
 {
     QDateTime dateTime{{2006, 01, 02}, {15, 04, 05}, QTimeZone{"UTC+01:00"}};
